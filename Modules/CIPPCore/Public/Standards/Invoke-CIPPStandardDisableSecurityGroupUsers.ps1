@@ -2,26 +2,51 @@ function Invoke-CIPPStandardDisableSecurityGroupUsers {
     <#
     .FUNCTIONALITY
     Internal
+    .APINAME
+    DisableSecurityGroupUsers
+    .CAT
+    Entra (AAD) Standards
+    .TAG
+    "mediumimpact"
+    .HELPTEXT
+    Completely disables the creation of security groups by users. This also breaks the ability to manage groups themselves, or create Teams
+    .ADDEDCOMPONENT
+    .LABEL
+    Disable Security Group creation by users
+    .IMPACT
+    Medium Impact
+    .POWERSHELLEQUIVALENT
+    Update-MgBetaPolicyAuthorizationPolicy
+    .RECOMMENDEDBY
+    .DOCSDESCRIPTION
+    Completely disables the creation of security groups by users. This also breaks the ability to manage groups themselves, or create Teams
+    .UPDATECOMMENTBLOCK
+    Run the Tools\Update-StandardsComments.ps1 script to update this comment block
     #>
+
+
+
+
     param($Tenant, $Settings)
     $CurrentInfo = New-GraphGetRequest -Uri 'https://graph.microsoft.com/beta/policies/authorizationPolicy/authorizationPolicy' -tenantid $Tenant
-    
-    If ($Settings.remediate) {
+
+    If ($Settings.remediate -eq $true) {
         if ($CurrentInfo.defaultUserRolePermissions.allowedToCreateSecurityGroups -eq $false) {
             Write-LogMessage -API 'Standards' -tenant $tenant -message 'Users are already not allowed to create Security Groups.' -sev Info
         } else {
             try {
                 $body = '{"defaultUserRolePermissions":{"allowedToCreateSecurityGroups":false}}'
-                $null = New-GraphPostRequest -tenantid $tenant -Uri 'https://graph.microsoft.com/beta/policies/authorizationPolicy/authorizationPolicy' -Type patch -Body $body -ContentType 'application/json'    
+                $null = New-GraphPostRequest -tenantid $tenant -Uri 'https://graph.microsoft.com/beta/policies/authorizationPolicy/authorizationPolicy' -Type patch -Body $body -ContentType 'application/json'
                 Write-LogMessage -API 'Standards' -tenant $tenant -message 'Disabled users from creating Security Groups.' -sev Info
                 $CurrentInfo.defaultUserRolePermissions.allowedToCreateSecurityGroups = $false
             } catch {
-                Write-LogMessage -API 'Standards' -tenant $tenant -message "Failed to disable users from creating Security Groups: $($_.exception.message)" -sev 'Error'
+                $ErrorMessage = Get-NormalizedError -Message $_.Exception.Message
+                Write-LogMessage -API 'Standards' -tenant $tenant -message "Failed to disable users from creating Security Groups: $ErrorMessage" -sev 'Error'
             }
         }
     }
-        
-    if ($Settings.alert) {
+
+    if ($Settings.alert -eq $true) {
 
         if ($CurrentInfo.defaultUserRolePermissions.allowedToCreateSecurityGroups -eq $false) {
             Write-LogMessage -API 'Standards' -tenant $tenant -message 'Users are not allowed to create Security Groups.' -sev Info
@@ -30,7 +55,11 @@ function Invoke-CIPPStandardDisableSecurityGroupUsers {
         }
     }
 
-    if ($Settings.report) {
-        Add-CIPPBPAField -FieldName 'DisableSecurityGroupUsers' -FieldValue [bool]$CurrentInfo.defaultUserRolePermissions.allowedToCreateSecurityGroups -StoreAs bool -Tenant $tenant
+    if ($Settings.report -eq $true) {
+        Add-CIPPBPAField -FieldName 'DisableSecurityGroupUsers' -FieldValue $CurrentInfo.defaultUserRolePermissions.allowedToCreateSecurityGroups -StoreAs bool -Tenant $tenant
     }
 }
+
+
+
+

@@ -2,14 +2,40 @@ function Invoke-CIPPStandardDisableTNEF {
     <#
     .FUNCTIONALITY
     Internal
+    .APINAME
+    DisableTNEF
+    .CAT
+    Exchange Standards
+    .TAG
+    "lowimpact"
+    .HELPTEXT
+    Disables Transport Neutral Encapsulation Format (TNEF)/winmail.dat for the tenant. TNEF can cause issues if the recipient is not using a client supporting TNEF.
+    .DOCSDESCRIPTION
+    Disables Transport Neutral Encapsulation Format (TNEF)/winmail.dat for the tenant. TNEF can cause issues if the recipient is not using a client supporting TNEF. Cannot be overridden by the user. For more information, see [Microsoft's documentation.](https://learn.microsoft.com/en-us/exchange/mail-flow/content-conversion/tnef-conversion?view=exchserver-2019)
+    .ADDEDCOMPONENT
+    .LABEL
+    Disable TNEF/winmail.dat
+    .IMPACT
+    Low Impact
+    .POWERSHELLEQUIVALENT
+    Set-RemoteDomain -Identity 'Default' -TNEFEnabled $false
+    .RECOMMENDEDBY
+    .DOCSDESCRIPTION
+    Disables Transport Neutral Encapsulation Format (TNEF)/winmail.dat for the tenant. TNEF can cause issues if the recipient is not using a client supporting TNEF.
+    .UPDATECOMMENTBLOCK
+    Run the Tools\Update-StandardsComments.ps1 script to update this comment block
     #>
+
+
+
+
 
     param ($Tenant, $Settings)
     $CurrentState = New-ExoRequest -tenantid $Tenant -cmdlet 'Get-RemoteDomain' -cmdParams @{Identity = 'Default' }
-    
-    if ($Settings.remediate) {
+
+    if ($Settings.remediate -eq $true) {
         Write-Host 'Time to remediate'
-        
+
         if ($CurrentState.TNEFEnabled -ne $false) {
             try {
                 New-ExoRequest -tenantid $Tenant -cmdlet 'Set-RemoteDomain' -cmdParams @{Identity = 'Default'; TNEFEnabled = $false } -useSystemmailbox $true
@@ -23,7 +49,7 @@ function Invoke-CIPPStandardDisableTNEF {
         }
     }
 
-    if ($Settings.alert) {
+    if ($Settings.alert -eq $true) {
         if ($CurrentState.TNEFEnabled -eq $false) {
             Write-LogMessage -API 'Standards' -tenant $tenant -message 'TNEF is disabled for Default Remote Domain' -sev Info
         } else {
@@ -31,9 +57,13 @@ function Invoke-CIPPStandardDisableTNEF {
         }
     }
 
-    if ($Settings.report) {
+    if ($Settings.report -eq $true) {
         $State = if ($CurrentState.TNEFEnabled -ne $false) { $false } else { $true }
-        Add-CIPPBPAField -FieldName 'TNEFDisabled' -FieldValue [bool]$State -StoreAs bool -Tenant $tenant
+        Add-CIPPBPAField -FieldName 'TNEFDisabled' -FieldValue $State -StoreAs bool -Tenant $tenant
     }
 
 }
+
+
+
+
