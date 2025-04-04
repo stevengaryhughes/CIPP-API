@@ -5,7 +5,7 @@ function Request-CIPPSPOPersonalSite {
         [string]$TenantFilter,
         [Parameter(Mandatory = $true)]
         [string[]]$UserEmails,
-        [string]$ExecutingUser = 'CIPP',
+        [string]$Headers = 'CIPP',
         [string]$APIName = 'Request-CIPPSPOPersonalSite'
     )
     $UserList = [System.Collections.Generic.List[string]]::new()
@@ -42,10 +42,11 @@ function Request-CIPPSPOPersonalSite {
     try {
         $Request = New-GraphPostRequest -scope "$AdminURL/.default" -tenantid $TenantFilter -Uri "$AdminURL/_vti_bin/client.svc/ProcessQuery" -Type POST -Body $XML -ContentType 'text/xml'
         if (!$Request.IsComplete) { throw }
-        Write-LogMessage -user $ExecutingUser -API $APIName -message "Requested personal site for $($Users -join ', ')" -Sev 'Info' -tenant $TenantFilter
-        return "Requested personal site for $($Users -join ', ')"
+        Write-LogMessage -headers $Headers -API $APIName -message "Requested personal site for $($UserEmails -join ', ')" -Sev 'Info' -tenant $TenantFilter
+        return "Requested personal site for $($UserEmails -join ', ')"
     } catch {
-        Write-LogMessage -user $ExecutingUser -API $APIName -message "Could not request personal site for  $($Users -join ', ')" -Sev 'Error' -tenant $TenantFilter
-        return "Could not request personal site for $($Users -join ', '). Error: $($_.Exception.Message)"
+        $ErrorMessage = Get-CippException -Exception $_
+        Write-LogMessage -headers $Headers -API $APIName -message "Could not request personal site for $($UserEmails -join ', '). Error: $($ErrorMessage.NormalizedError)" -Sev 'Error' -tenant $TenantFilter -LogData $ErrorMessage
+        return "Could not request personal site for $($UserEmails -join ', '). Error: $($ErrorMessage.NormalizedError)"
     }
 }
